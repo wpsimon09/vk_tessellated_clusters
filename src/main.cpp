@@ -135,12 +135,13 @@ int main(int argc, char** argv)
   appInfo.queues         = vkContext.getQueueInfos();
 
   // Setting up the layout of the application
-  appInfo.dockSetup = [](ImGuiID viewportID) {
-#ifndef NDEBUG
-    // left side panel container
-    ImGuiID debugID = ImGui::DockBuilderSplitNode(viewportID, ImGuiDir_Left, 0.15F, nullptr, &viewportID);
-    ImGui::DockBuilderDockWindow("Debug", debugID);
-#endif
+  appInfo.dockSetup = [debugUI = sampleElement->isDebugUI()](ImGuiID viewportID) {
+    if(debugUI)
+    {
+      // left side panel container
+      ImGuiID debugID = ImGui::DockBuilderSplitNode(viewportID, ImGuiDir_Left, 0.15F, nullptr, &viewportID);
+      ImGui::DockBuilderDockWindow("Debug", debugID);
+    }
     // right side panel container
     ImGuiID settingID = ImGui::DockBuilderSplitNode(viewportID, ImGuiDir_Right, 0.25F, nullptr, &viewportID);
     ImGui::DockBuilderDockWindow("Settings", settingID);

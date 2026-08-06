@@ -1,4 +1,6 @@
 # Changelog for vk_tessellated_clusters
+* 2028-8-6:
+  * added "Statistics" - "Generated Clusters" UI.
 * 2026-7-2:
   * new open-source tessellation table `tessellation_table_nv_raw.hpp` which no longer is directly derived from Unreal Engine's implementation. Thanks to Andrea Maggiordomo <amaggiordomo@nvidia.com> for the work on it.
 * 2026-4-22:

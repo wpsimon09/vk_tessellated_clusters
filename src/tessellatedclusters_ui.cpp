@@ -17,7 +17,10 @@
 * SPDX-License-Identifier: Apache-2.0
 */
 
+#include <cstdarg>
+#include <cstdio>
 #include <filesystem>
+#include <span>
 
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
@@ -74,7 +77,7 @@ std::string formatMetric(size_t size)
 }
 
 template <typename T>
-void uiPlot(std::string plotName, std::string tooltipFormat, const std::vector<T>& data, const T& maxValue)
+void uiPlot(std::string plotName, std::string tooltipFormat, std::span<const T> data, const T& maxValue)
 {
   ImVec2 plotSize = ImVec2(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y / 2);
 
@@ -93,7 +96,7 @@ void uiPlot(std::string plotName, std::string tooltipFormat, const std::vector<T
 
     ImPlot::SetAxes(ImAxis_X1, ImAxis_Y1);
     ImPlot::PlotShaded("", data.data(), (int)data.size(), -INFINITY, 1.0, 0.0,
-                       ImPlotSpec(ImPlotProp_FillColor, (ImU32)plotColor, ImPlotProp_FillAlpha, 0.25f));
+                       ImPlotSpec(ImPlotProp_FillColor, (ImU32)plotColor, ImPlotProp_FillAlpha, 0.75f));
 
     if(ImPlot::IsPlotHovered())
     {
@@ -631,6 +634,44 @@ void TessellatedClusters::onUIRender()
     }
   }
 
+  if(m_renderer && ImGui::CollapsingHeader("Generated Clusters"))
+  {
+    // histogram[i] holds the number of generated clusters that have i triangles.
+    // scan for the tallest bin (used to scale the plot's y-axis), the highest occupied
+    // bin (the largest triangle count that actually occurred) and the total count.
+    uint32_t maxValue     = 0;  // largest number of clusters found in any single bin
+    uint32_t maxTriangles = 0;  // highest per-cluster triangle count that occurred
+    uint32_t count        = 0;  // total number of generated clusters
+    for(uint32_t i = 0; i < std::size(readback.histogram); ++i)
+    {
+      uint32_t bin = readback.histogram[i];
+      count += bin;
+      if(bin > 0)
+        maxTriangles = i;
+      if(bin > maxValue)
+        maxValue = bin;
+    }
+
+    ImGui::Text("Cluster count: %d", count);
+    ImGui::Text("Cluster max triangles: %d", maxTriangles);
+
+    // limit the plotted range to the largest triangle count a cluster can reach:
+    // the peak of the model's base cluster size and the tessellation table's max,
+    // plus one because histogram[i] holds clusters with exactly i triangles.
+    uint32_t plotTriangles =
+        std::max(m_scene ? m_scene->m_maxClusterTriangles : 0u, m_renderer->getTessellationMaxTriangles()) + 1;
+    plotTriangles = std::min(plotTriangles, uint32_t(std::size(readback.histogram)));
+
+    uiPlot<uint32_t>(std::string("G.Cluster Triangle Histogram"), std::string("Cluster count with %d triangles: %d"),
+                     std::span<const uint32_t>(readback.histogram, plotTriangles), maxValue);
+
+    m_rendererConfig.generateHistogram = true;
+  }
+  else
+  {
+    m_rendererConfig.generateHistogram = false;
+  }
+
   if(m_scene && ImGui::CollapsingHeader("Model Clusters"))
   {
     ImGui::Text("Cluster max triangles: %d", m_scene->m_maxClusterTriangles);
@@ -640,10 +681,10 @@ void TessellatedClusters::onUIRender()
                 m_scene->m_clusterTriangleHistogram.back(),
                 float(m_scene->m_clusterTriangleHistogram.back()) * 100.f / float(m_scene->m_numClusters));
 
-    uiPlot(std::string("Cluster Triangle Histogram"), std::string("Cluster count with %d triangles: %d"),
-           m_scene->m_clusterTriangleHistogram, m_scene->m_clusterTriangleHistogramMax);
-    uiPlot(std::string("Cluster Vertex Histogram"), std::string("Cluster count with %d vertices: %d"),
-           m_scene->m_clusterVertexHistogram, m_scene->m_clusterVertexHistogramMax);
+    uiPlot<uint32_t>(std::string("M.Cluster Triangle Histogram"), std::string("Cluster count with %d triangles: %d"),
+                     m_scene->m_clusterTriangleHistogram, m_scene->m_clusterTriangleHistogramMax);
+    uiPlot<uint32_t>(std::string("M.Cluster Vertex Histogram"), std::string("Cluster count with %d vertices: %d"),
+                     m_scene->m_clusterVertexHistogram, m_scene->m_clusterVertexHistogramMax);
   }
   ImGui::End();
 
@@ -667,68 +708,154 @@ void TessellatedClusters::onUIRender()
 
   ImGui::End();
 
-#ifndef NDEBUG
-  ImGui::Begin("Debug");
-  if(ImGui::CollapsingHeader("Misc settings", nullptr, ImGuiTreeNodeFlags_DefaultOpen))
+  if(m_debugUI)
   {
-    PE::begin("##HiddenID");
-    PE::InputInt("Colorize xor", (int*)&m_frameConfig.frameConstants.colorXor);
-    PE::Checkbox("Auto reset timer", &m_tweak.autoResetTimers);
-    PE::InputInt("Persistent threads", (int*)&m_rendererConfig.persistentThreads, 1, 128, ImGuiInputTextFlags_EnterReturnsTrue);
-    PE::end();
-  }
+    ImGui::Begin("Debug");
+    if(ImGui::CollapsingHeader("Misc settings", nullptr, ImGuiTreeNodeFlags_DefaultOpen))
+    {
+      PE::begin("##HiddenID");
+      PE::InputInt("Colorize xor", (int*)&m_frameConfig.frameConstants.colorXor);
+      PE::Checkbox("Auto reset timer", &m_tweak.autoResetTimers);
+      PE::InputInt("Persistent threads", (int*)&m_rendererConfig.persistentThreads, 1, 128, ImGuiInputTextFlags_EnterReturnsTrue);
+      PE::end();
+    }
 
-  if(ImGui::CollapsingHeader("Debug Shader Values", nullptr, ImGuiTreeNodeFlags_DefaultOpen))
-  {
-    PE::begin("##HiddenID");
-    PE::InputInt("dbgInt", (int*)&m_frameConfig.frameConstants.dbgUint, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue);
-    PE::InputFloat("dbgFloat", &m_frameConfig.frameConstants.dbgFloat, 0.1f, 1.0f, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue);
-    PE::end();
+    if(ImGui::CollapsingHeader("Debug Shader Values", nullptr, ImGuiTreeNodeFlags_DefaultOpen))
+    {
+      PE::begin("##HiddenID");
+      PE::InputInt("dbgInt", (int*)&m_frameConfig.frameConstants.dbgUint, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue);
+      PE::InputFloat("dbgFloat", &m_frameConfig.frameConstants.dbgFloat, 0.1f, 1.0f, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue);
+      PE::end();
 
-    ImGui::Text(" debugI :  %10d", readback.debugI);
-    ImGui::Text(" debugUI:  %10u", readback.debugUI);
-    ImGui::Text(" debugU64:  %llX", readback.debugU64);
-    static bool debugFloat = false;
-    static bool debugHex   = false;
-    static bool debugAll   = false;
-    ImGui::Checkbox(" as float", &debugFloat);
-    ImGui::SameLine();
-    ImGui::Checkbox("hex", &debugHex);
-    ImGui::SameLine();
-    ImGui::Checkbox("all", &debugAll);
-    ImGui::SameLine();
-    bool     doPrint = ImGui::Button("print");
-    uint32_t count   = debugAll ? 64 : 32;
-    if(debugFloat)
-    {
-      for(uint32_t i = 0; i < count; i++)
+      ImGui::Text(" debugI :  %10d", readback.debugI);
+      ImGui::Text(" debugUI:  %10u", readback.debugUI);
+      ImGui::Text(" debugU64:  %llX", readback.debugU64);
+      static bool debugFloat  = false;
+      static bool debugHex    = false;
+      static bool debugAll    = false;
+      static bool debugSingle = false;
+      ImGui::Checkbox(" as float", &debugFloat);
+      ImGui::SameLine();
+      ImGui::Checkbox("hex", &debugHex);
+      ImGui::SameLine();
+      ImGui::Checkbox("all", &debugAll);
+      ImGui::SameLine();
+      ImGui::Checkbox("single", &debugSingle);
+      ImGui::SameLine();
+      bool doPrint = ImGui::Button("print");
+
+      // renders right-justified text into the current table cell
+      auto textRight = [](const char* fmt, ...) {
+        char    buf[64];
+        va_list args;
+        va_start(args, fmt);
+        vsnprintf(buf, sizeof(buf), fmt, args);
+        va_end(args);
+        float textWidth  = ImGui::CalcTextSize(buf).x;
+        float availwidth = ImGui::GetContentRegionAvail().x;
+        if(availwidth > textWidth)
+          ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (availwidth - textWidth));
+        ImGui::TextUnformatted(buf);
+      };
+
+      if(debugSingle)
       {
-        ImGui::Text("%2d: %f %f %f", i, *(float*)&readback.debugA[i], *(float*)&readback.debugB[i], *(float*)&readback.debugC[i]);
-        if(doPrint)
-          LOGI("%2d; %f; %f; %f;\n", i, *(float*)&readback.debugA[i], *(float*)&readback.debugB[i], *(float*)&readback.debugC[i]);
+        // debugA, debugB and debugC are contiguous in memory, so indexing debugA
+        // beyond its bounds reads them as one flat array.
+        uint32_t count = debugAll ? 128 : 64;
+
+        if(ImGui::BeginTable("debugValues", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingStretchSame))
+        {
+          ImGui::TableSetupColumn("#", ImGuiTableColumnFlags_WidthFixed);
+          ImGui::TableSetupColumn("value");
+          ImGui::TableHeadersRow();
+
+          for(uint32_t i = 0; i < count; i++)
+          {
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
+            textRight("%3d", i);
+            ImGui::TableNextColumn();
+            if(debugFloat)
+            {
+              textRight("%f", *(float*)&readback.debugA[i]);
+              if(doPrint)
+                LOGI("%3d; %f;\n", i, *(float*)&readback.debugA[i]);
+            }
+            else if(debugHex)
+            {
+              textRight("%8X", readback.debugA[i]);
+              if(doPrint)
+                LOGI("%3d; %8X;\n", i, readback.debugA[i]);
+            }
+            else
+            {
+              textRight("%10u", readback.debugA[i]);
+              if(doPrint)
+                LOGI("%3d; %10u;\n", i, readback.debugA[i]);
+            }
+          }
+          ImGui::EndTable();
+        }
+      }
+      else
+      {
+        uint32_t count = debugAll ? 64 : 32;
+
+        if(ImGui::BeginTable("debugValues", 4, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingStretchSame))
+        {
+          ImGui::TableSetupColumn("#", ImGuiTableColumnFlags_WidthFixed);
+          ImGui::TableSetupColumn("A");
+          ImGui::TableSetupColumn("B");
+          ImGui::TableSetupColumn("C");
+          ImGui::TableHeadersRow();
+
+          for(uint32_t i = 0; i < count; i++)
+          {
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
+            textRight("%2d", i);
+            if(debugFloat)
+            {
+              ImGui::TableNextColumn();
+              textRight("%f", *(float*)&readback.debugA[i]);
+              ImGui::TableNextColumn();
+              textRight("%f", *(float*)&readback.debugB[i]);
+              ImGui::TableNextColumn();
+              textRight("%f", *(float*)&readback.debugC[i]);
+              if(doPrint)
+                LOGI("%2d; %f; %f; %f;\n", i, *(float*)&readback.debugA[i], *(float*)&readback.debugB[i],
+                     *(float*)&readback.debugC[i]);
+            }
+            else if(debugHex)
+            {
+              ImGui::TableNextColumn();
+              textRight("%8X", readback.debugA[i]);
+              ImGui::TableNextColumn();
+              textRight("%8X", readback.debugB[i]);
+              ImGui::TableNextColumn();
+              textRight("%8X", readback.debugC[i]);
+              if(doPrint)
+                LOGI("%2d; %8X; %8X; %8X;\n", i, readback.debugA[i], readback.debugB[i], readback.debugC[i]);
+            }
+            else
+            {
+              ImGui::TableNextColumn();
+              textRight("%10u", readback.debugA[i]);
+              ImGui::TableNextColumn();
+              textRight("%10u", readback.debugB[i]);
+              ImGui::TableNextColumn();
+              textRight("%10u", readback.debugC[i]);
+              if(doPrint)
+                LOGI("%2d; %10u; %10u; %10u;\n", i, readback.debugA[i], readback.debugB[i], readback.debugC[i]);
+            }
+          }
+          ImGui::EndTable();
+        }
       }
     }
-    else if(debugHex)
-    {
-      for(uint32_t i = 0; i < count; i++)
-      {
-        ImGui::Text("%2d: %8X %8X %8X", i, readback.debugA[i], readback.debugB[i], readback.debugC[i]);
-        if(doPrint)
-          LOGI("%2d; %8X; %8X; %8X;\n", i, readback.debugA[i], readback.debugB[i], readback.debugC[i]);
-      }
-    }
-    else
-    {
-      for(uint32_t i = 0; i < count; i++)
-      {
-        ImGui::Text("%2d: %10u %10u %10u", i, readback.debugA[i], readback.debugB[i], readback.debugC[i]);
-        if(doPrint)
-          LOGI("%2d; %10u; %10u; %10u;\n", i, readback.debugA[i], readback.debugB[i], readback.debugC[i]);
-      }
-    }
+    ImGui::End();
   }
-  ImGui::End();
-#endif
 
   handleChanges();
 

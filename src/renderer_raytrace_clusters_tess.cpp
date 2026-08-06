@@ -44,6 +44,8 @@ public:
   virtual void deinit(Resources& res) override;
   virtual void updatedFrameBuffer(Resources& res);
 
+  uint32_t getTessellationMaxTriangles() const override { return m_tessTable.m_maxTriangles; }
+
 private:
   bool initShaders(Resources& res, Scene& scene, const RendererConfig& config);
 
@@ -136,6 +138,7 @@ bool RendererRayTraceClustersTess::initShaders(Resources& res, Scene& scene, con
   options.AddMacroDefinition("DO_CULLING", fmt::format("{}", config.doCulling ? 1 : 0));
   options.AddMacroDefinition("DO_ANIMATION", fmt::format("{}", config.doAnimation ? 1 : 0));
   options.AddMacroDefinition("DEBUG_VISUALIZATION", fmt::format("{}", config.debugVisualization ? 1 : 0));
+  options.AddMacroDefinition("TESS_GENERATE_HISTOGRAM", fmt::format("{}", config.generateHistogram ? 1 : 0));
 
   shaderc::CompileOptions optionsAO = options;
   options.AddMacroDefinition("RAYTRACING_PAYLOAD_INDEX", "0");

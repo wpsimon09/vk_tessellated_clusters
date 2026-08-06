@@ -34,6 +34,8 @@ public:
   virtual void updatedFrameBuffer(Resources& res) override;
   virtual void deinit(Resources& res) override;
 
+  uint32_t getTessellationMaxTriangles() const override { return m_tessTable.m_maxTriangles; }
+
 private:
   bool initShaders(Resources& res, Scene& scene, const RendererConfig& config);
 
@@ -111,6 +113,7 @@ bool RendererRasterClustersTess::initShaders(Resources& res, Scene& scene, const
   options.AddMacroDefinition("DO_CULLING", fmt::format("{}", config.doCulling ? 1 : 0));
   options.AddMacroDefinition("DO_ANIMATION", fmt::format("{}", config.doAnimation ? 1 : 0));
   options.AddMacroDefinition("DEBUG_VISUALIZATION", fmt::format("{}", config.debugVisualization ? 1 : 0));
+  options.AddMacroDefinition("TESS_GENERATE_HISTOGRAM", fmt::format("{}", config.generateHistogram ? 1 : 0));
 
   res.compileShader(m_shaders.meshShaderFull, VK_SHADER_STAGE_MESH_BIT_NV, "render_raster_clusters.mesh.glsl", &options);
 

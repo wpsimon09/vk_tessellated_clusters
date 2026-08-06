@@ -390,6 +390,9 @@ void main()
           build.tempInstanceIDs.d[tempOffset]     = instanceID;
           // we instantiate in explicit mode, so we provide the CLAS destination address
           build.tempClusterAddresses.d[tempOffset] = uint64_t(build.genClusterData) + dataOffset;
+        #if TESS_GENERATE_HISTOGRAM
+          atomicAdd(readback.histogram[numTriangles], 1);
+        #endif
         }
       #if TESS_USE_1X_TRANSIENTBUILDS
         else
@@ -434,6 +437,9 @@ void main()
           // for now just export the crucial header
           // but we will later append the triangle mapping to this partOffset
           build.partTriangles.d[partOffset].cluster = cinfo;
+        #if TESS_GENERATE_HISTOGRAM
+          atomicAdd(readback.histogram[simpleCount], 1);
+        #endif
         }
       #endif
       
@@ -785,6 +791,9 @@ void main()
           build.transClusterAddresses.d[transOffset] = uint64_t(build.genClusterData) + transDataOffset;
           
           build.partTriangles.d[transPartOffset].cluster = cinfo;
+        #if TESS_GENERATE_HISTOGRAM
+          atomicAdd(readback.histogram[numBatchTris], 1);
+        #endif
           
           atomicAdd(build.blasBuildInfos.d[instanceID].clusterReferencesCount, 1);
           atomicAdd(readback.numTotalTriangles, uint(numBatchTris));

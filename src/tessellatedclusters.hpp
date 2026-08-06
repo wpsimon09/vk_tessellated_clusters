@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2024-2025, NVIDIA CORPORATION.  All rights reserved.
+* Copyright (c) 2024-2026, NVIDIA CORPORATION.  All rights reserved.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 *
-* SPDX-FileCopyrightText: Copyright (c) 2024-2025, NVIDIA CORPORATION.
+* SPDX-FileCopyrightText: Copyright (c) 2024-2026, NVIDIA CORPORATION.
 * SPDX-License-Identifier: Apache-2.0
 */
 
@@ -142,6 +142,8 @@ public:
 
   void setSupportsClusters(bool supported) { m_resources.m_supportsClusters = supported; }
 
+  bool isDebugUI() const { return m_debugUI; }
+
 private:
   VkExtent2D                 m_windowSize;
   Info                       m_info;
@@ -165,6 +167,12 @@ private:
   bool   m_requestCameraRecenter = false;
   int    m_frames                = 0;
   double m_animTime              = 0;
+
+#ifndef NDEBUG
+  bool m_debugUI = true;
+#else
+  bool m_debugUI = false;
+#endif
 
   Tweak m_tweak;
   Tweak m_tweakLast;

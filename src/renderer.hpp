@@ -46,6 +46,7 @@ struct RendererConfig
   bool pnDisplacement      = true;
   bool transientClusters1X = true;
   bool transientClusters2X = true;
+  bool generateHistogram   = false;
 
   bool rasterBatchMeshlets = true;
   bool persistentKernel    = false;
@@ -104,6 +105,10 @@ public:
   {
     return reserved ? m_resourceReservedUsage : m_resourceActualUsage;
   };
+
+  // maximum number of triangles a single cluster can be tessellated into by this
+  // renderer's tessellation table (0 if the renderer does not tessellate).
+  virtual uint32_t getTessellationMaxTriangles() const { return 0; }
 
 protected:
   void initBasics(Resources& res, Scene& scene, const RendererConfig& config);

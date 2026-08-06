@@ -169,6 +169,10 @@
 #define TESS_USE_PERSISTENT_KERNEL 0
 #endif
 
+#ifndef TESS_GENERATE_HISTOGRAM
+#define TESS_GENERATE_HISTOGRAM 1
+#endif
+
 /////////////////////////////////////////
 
 #ifdef __cplusplus
@@ -306,6 +310,8 @@ struct Readback
   uint debugA[64];
   uint debugB[64];
   uint debugC[64];
+
+  uint histogram[257];
 };
 
 

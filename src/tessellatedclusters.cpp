@@ -54,6 +54,7 @@ TessellatedClusters::TessellatedClusters(const Info& info)
                                 &m_sceneConfig.processingThreadsPct);
   m_info.parameterRegistry->add({"dumpspirv", "dumps compiled spirv into working directory"}, &m_resources.m_dumpSpirv);
   m_info.parameterRegistry->add({"splitfactor"}, &m_rendererConfig.splitFactor);
+  m_info.parameterRegistry->add({"debugui", "enable the debug ui window, defaults to on in debug builds"}, &m_debugUI);
 
   m_frameConfig.frameConstants                         = {};
   m_frameConfig.frameConstants.ambientOcclusionSamples = 1;
@@ -471,11 +472,11 @@ void TessellatedClusters::handleChanges()
      || rendererCfgChanged(m_rendererConfig.doCulling) || rendererCfgChanged(m_rendererConfig.persistentThreads)
      || rendererCfgChanged(m_rendererConfig.persistentKernel) || rendererCfgChanged(m_rendererConfig.positionTruncateBits)
      || rendererCfgChanged(m_rendererConfig.pnDisplacement) || rendererCfgChanged(m_rendererConfig.numVisibleClusterBits)
-     || rendererCfgChanged(m_rendererConfig.numSplitTriangleBits)
-     || rendererCfgChanged(m_rendererConfig.numGeneratedVerticesBits) || rendererCfgChanged(m_rendererConfig.numPartTriangleBits)
-     || rendererCfgChanged(m_rendererConfig.numGeneratedClusterMegs) || rendererCfgChanged(m_rendererConfig.transientClusters1X)
-     || rendererCfgChanged(m_rendererConfig.transientClusters2X) || rendererCfgChanged(m_rendererConfig.rasterBatchMeshlets)
-     || rendererCfgChanged(m_rendererConfig.splitFactor) || rendererCfgChanged(m_rendererConfig.debugVisualization))
+     || rendererCfgChanged(m_rendererConfig.numSplitTriangleBits) || rendererCfgChanged(m_rendererConfig.numGeneratedVerticesBits)
+     || rendererCfgChanged(m_rendererConfig.numPartTriangleBits) || rendererCfgChanged(m_rendererConfig.numGeneratedClusterMegs)
+     || rendererCfgChanged(m_rendererConfig.transientClusters1X) || rendererCfgChanged(m_rendererConfig.transientClusters2X)
+     || rendererCfgChanged(m_rendererConfig.rasterBatchMeshlets) || rendererCfgChanged(m_rendererConfig.splitFactor)
+     || rendererCfgChanged(m_rendererConfig.debugVisualization) || rendererCfgChanged(m_rendererConfig.generateHistogram))
   {
     rendererChanged = true;
 
