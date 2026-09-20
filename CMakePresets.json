@@ -1,0 +1,92 @@
+{
+  "version": 6,
+
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 20,
+    "patch": 0
+  },
+
+  "configurePresets": [
+    {
+      "name": "linux-debug",
+      "displayName": "Linux Debug",
+      "description": "Linux development build using Ninja",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/out/debug/linux",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    },
+
+    {
+      "name": "linux-release",
+      "displayName": "Linux Release",
+      "description": "Linux release build using Ninja",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/out/release/linux",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    },
+
+    {
+      "name": "windows-debug",
+      "displayName": "Windows Visual Studio 2026",
+      "description": "Windows development build using Visual Studio 2026",
+      "generator": "Visual Studio 18 2026",
+      "architecture": {
+        "value": "x64",
+        "strategy": "external"
+      },
+      "binaryDir": "${sourceDir}/out/debug/windows",
+      "cacheVariables": {
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    },
+    {
+      "name": "windows-release",
+      "displayName": "Windows Visual Studio 2026",
+      "description": "Windows release build using Visual Studio 2026",
+      "generator": "Visual Studio 18 2026",
+      "architecture": {
+        "value": "x64",
+        "strategy": "external"
+      },
+      "binaryDir": "${sourceDir}/out/release/windows",
+      "cacheVariables": {
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    }
+  ],
+
+  "buildPresets": [
+    {
+      "name": "linux-debug",
+      "displayName": "Build Linux Debug",
+      "configurePreset": "linux-debug"
+    },
+
+    {
+      "name": "linux-release",
+      "displayName": "Build Linux Release",
+      "configurePreset": "linux-release"
+    },
+
+    {
+      "name": "windows-debug",
+      "displayName": "Build Windows Debug",
+      "configurePreset": "windows-debug",
+      "configuration": "Debug"
+    },
+
+    {
+      "name": "windows-release",
+      "displayName": "Build Windows Release",
+      "configurePreset": "windows-release",
+      "configuration": "Release"
+    }
+  ]
+}
