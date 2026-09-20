@@ -2,10 +2,10 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Debug - Launch LeprosyEngine_SandBox",
+            "name": "Debug - Launch Sample",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/_bin/Debug/vk_animated_clusters",
+            "program": "${workspaceFolder}/_bin/Debug/vk_tessellated_clusters",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
