@@ -204,6 +204,7 @@ bool RendererRayTraceClustersTess::init(Resources& res, Scene& scene, const Rend
     res.m_allocator.createBuffer(m_sceneBuildBuffer, sizeof(shaderio::SceneBuilding),
                                  VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT
                                      | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR);
+    NVVK_DBG_NAME(m_sceneBuildBuffer.buffer);
 
     memset(&m_sceneBuildShaderio, 0, sizeof(m_sceneBuildShaderio));
     m_sceneBuildShaderio.numRenderInstances   = uint32_t(m_renderInstances.size());
@@ -278,6 +279,9 @@ bool RendererRayTraceClustersTess::init(Resources& res, Scene& scene, const Rend
     res.m_allocator.createBuffer(m_sceneDataBuffer, rangesScene.tempOffset,
                                  VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR
                                      | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR);
+
+    NVVK_DBG_NAME(m_sceneDataBuffer.buffer);
+
     m_resourceReservedUsage.operationsMemBytes += m_sceneDataBuffer.bufferSize;
 
     m_sceneBuildShaderio.instanceStates += m_sceneDataBuffer.address;
@@ -307,6 +311,9 @@ bool RendererRayTraceClustersTess::init(Resources& res, Scene& scene, const Rend
     // the buffer that contains recursive splitting information
     res.m_allocator.createBuffer(m_sceneSplitBuffer, sizeof(shaderio::TessTriangleInfo) * uint32_t(1 << config.numSplitTriangleBits),
                                  VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+    NVVK_DBG_NAME(m_sceneSplitBuffer.buffer);
+
+
     m_resourceReservedUsage.operationsMemBytes += m_sceneSplitBuffer.bufferSize;
 
     m_sceneBuildShaderio.splitTriangles = m_sceneSplitBuffer.address;
@@ -412,6 +419,12 @@ bool RendererRayTraceClustersTess::init(Resources& res, Scene& scene, const Rend
 
 void RendererRayTraceClustersTess::render(VkCommandBuffer cmd, Resources& res, Scene& scene, const FrameConfig& frame, nvvk::ProfilerGpuTimer& profiler)
 {
+  //========================================
+  // Frame start
+  //========================================
+
+  //====================================
+  // Fill in the buffers
   m_sceneBuildShaderio.viewPos = frame.freezeCulling ? frame.frameConstantsLast.viewPos : frame.frameConstants.viewPos;
   m_sceneBuildShaderio.positionTruncateBitCount = m_config.positionTruncateBits;
 
@@ -459,6 +472,29 @@ void RendererRayTraceClustersTess::render(VkCommandBuffer cmd, Resources& res, S
         const shaderio::RenderInstance& renderInstance = m_renderInstances[i];
         uint32_t                        instanceId     = uint32_t(i);
         vkCmdPushConstants(cmd, m_pipelineLayout, m_stageFlags, 0, sizeof(uint32_t), &instanceId);
+
+        /*
+        Shader Description
+        ==================
+        
+        This compute shader does basic basic culling of all clusters.
+        Occlusion and frustum culling can be activated.
+
+        It fills `build.visibleClusters`
+
+        A single thread represents one cluster.
+
+        The sample uses a very basic approach going over all clusters,
+        even if we might have detected that an instance has already been
+        culled.
+        It would be better (but a bit more complex) to handle this differently
+        so we don't need to iterate over clusters known to be culled.
+
+        The "vk_lod_cluster" sample implements a more sophisticated
+        scene traversal logic.
+
+      */
+
         vkCmdDispatch(cmd, (renderInstance.numClusters + CLUSTERS_CULL_WORKGROUP - 1) / CLUSTERS_CULL_WORKGROUP, 1, 1);
       }
 
@@ -471,6 +507,17 @@ void RendererRayTraceClustersTess::render(VkCommandBuffer cmd, Resources& res, S
 
       uint32_t buildSetupID = BUILD_SETUP_CLASSIFY;
       vkCmdPushConstants(cmd, m_pipelineLayout, m_stageFlags, 0, sizeof(uint32_t), &buildSetupID);
+
+      /*
+        Shader Description
+        ==================
+        
+        This compute shader does basic operations on a single thread.
+        For example clamping atomic counters back to their limits or
+        setting up indirect dispatches or draws etc.
+        
+        BUILD_SETUP_... are enums for the various operations
+      */
       vkCmdDispatch(cmd, 1, 1, 1);
 
       memBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
@@ -479,6 +526,9 @@ void RendererRayTraceClustersTess::render(VkCommandBuffer cmd, Resources& res, S
                            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT, 0, 1,
                            &memBarrier, 0, nullptr, 0, nullptr);
     }
+
+    //===================================================
+    // Classify clusters
 
     {
       auto timerSection = profiler.cmdFrameSection(cmd, "Cluster Classify");

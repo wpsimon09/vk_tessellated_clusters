@@ -213,6 +213,10 @@ void Renderer::initBasics(Resources& res, Scene& scene, const RendererConfig& co
 
   res.m_allocator.createBuffer(m_renderInstanceBuffer, sizeof(shaderio::RenderInstance) * m_renderInstances.size(),
                                VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+
+
+  NVVK_DBG_NAME(m_renderInstanceBuffer.buffer);
+
   res.simpleUploadBuffer(m_renderInstanceBuffer, m_renderInstances.data());
 
   m_resourceReservedUsage.operationsMemBytes += m_renderInstanceBuffer.bufferSize;
@@ -269,6 +273,10 @@ void Renderer::initRayTracingTlas(Resources& res, Scene& scene, const RendererCo
   // Create a buffer holding the actual instance data (matrices++) for use by the AS builder
   res.m_allocator.createBuffer(m_tlasInstancesBuffer, tlasInstances.size() * sizeof(VkAccelerationStructureInstanceKHR),
                                VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+
+
+  NVVK_DBG_NAME(m_tlasInstancesBuffer.buffer);
+
   m_resourceReservedUsage.operationsMemBytes += tlasInstances.size() * sizeof(VkAccelerationStructureInstanceKHR);
   res.simpleUploadBuffer(m_tlasInstancesBuffer, tlasInstances.data());
 

@@ -309,6 +309,8 @@ void Scene::uploadGeometry(Resources& res)
       res.m_allocator.createBuffer(geometry.positionsBuffer, sizeof(glm::vec3) * geometry.positions.size(),
                                    VK_BUFFER_USAGE_STORAGE_BUFFER_BIT
                                        | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR);
+
+
       NVVK_DBG_NAME(geometry.positionsBuffer.buffer);
       uploader.uploadBuffer(geometry.positionsBuffer, geometry.positions.data());
       m_sceneMemBytes += geometry.positionsBuffer.bufferSize;

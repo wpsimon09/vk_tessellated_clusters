@@ -65,6 +65,8 @@ void RayTracingClusterData::initRayTracingTemplates(Resources& res, Scene& scene
   res.m_allocator.createBuffer(scratchBuffer, tempScratchSize,
                                VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR);
 
+  NVVK_DBG_NAME(scratchBuffer.buffer);
+
   std::vector<VkClusterAccelerationStructureBuildTriangleClusterTemplateInfoNV> templateInfos(scene.m_maxPerGeometryClusters);
   std::vector<VkClusterAccelerationStructureInstantiateClusterInfoNV> instantiateInfos(scene.m_maxPerGeometryClusters);
 
@@ -74,11 +76,19 @@ void RayTracingClusterData::initRayTracingTemplates(Resources& res, Scene& scene
                                VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR, VMA_MEMORY_USAGE_CPU_ONLY,
                                VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT);
 
+
+  NVVK_DBG_NAME(templateInfosBuffer.buffer);
+
+
   nvvk::Buffer instantiateInfosBuffer;
   res.m_allocator.createBuffer(instantiateInfosBuffer,
                                sizeof(VkClusterAccelerationStructureInstantiateClusterInfoNV) * instantiateInfos.size(),
                                VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR, VMA_MEMORY_USAGE_CPU_ONLY,
                                VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT);
+
+
+  NVVK_DBG_NAME(instantiateInfosBuffer.buffer);
+
 
   nvvk::Buffer sizesBuffer;
   res.m_allocator.createBuffer(sizesBuffer, sizeof(uint32_t) * instantiateInfos.size(),
@@ -87,12 +97,18 @@ void RayTracingClusterData::initRayTracingTemplates(Resources& res, Scene& scene
                                VMA_MEMORY_USAGE_CPU_ONLY,
                                VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT);
 
+
+  NVVK_DBG_NAME(sizesBuffer.buffer);
+
   nvvk::Buffer dstAddressesBuffer;
   res.m_allocator.createBuffer(dstAddressesBuffer, sizeof(uint64_t) * instantiateInfos.size(),
                                VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR
                                    | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
                                VMA_MEMORY_USAGE_CPU_ONLY,
                                VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT);
+
+
+  NVVK_DBG_NAME(dstAddressesBuffer.buffer);
 
 
   // 32 byte alignment requirement for bbox
@@ -106,6 +122,9 @@ void RayTracingClusterData::initRayTracingTemplates(Resources& res, Scene& scene
   res.m_allocator.createBuffer(bboxesBuffer, sizeof(TemplateBbox) * instantiateInfos.size(),
                                VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR, VMA_MEMORY_USAGE_CPU_ONLY,
                                VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT);
+
+  NVVK_DBG_NAME(bboxesBuffer.buffer);
+
 
   for(size_t g = 0; g < scene.m_geometries.size(); g++)
   {
@@ -191,13 +210,23 @@ void RayTracingClusterData::initRayTracingTemplates(Resources& res, Scene& scene
     res.m_allocator.createBuffer(geometryTemplate.templateData, buildSum, VK_BUFFER_USAGE_RAY_TRACING_BIT_NV);
     m_resourceUsageInfo.rtTemplateMemBytes += geometryTemplate.templateData.bufferSize;
 
+
+    NVVK_DBG_NAME(geometryTemplate.templateData.buffer);
+
     res.m_allocator.createBuffer(geometryTemplate.templateInstantiationSizes, sizeof(uint32_t) * numClusters,
                                  VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
     m_resourceUsageInfo.operationsMemBytes += geometryTemplate.templateInstantiationSizes.bufferSize;
 
+    NVVK_DBG_NAME(geometryTemplate.templateInstantiationSizes.buffer);
+
+
     res.m_allocator.createBuffer(geometryTemplate.templateAddresses, sizeof(uint64_t) * numClusters,
                                  VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
     m_resourceUsageInfo.operationsMemBytes += geometryTemplate.templateAddresses.bufferSize;
+
+
+    NVVK_DBG_NAME(geometryTemplate.templateAddresses.buffer);
+
 
     {
       uint64_t* dstAddresses = ((uint64_t*)dstAddressesBuffer.mapping);

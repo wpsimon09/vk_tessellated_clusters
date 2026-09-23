@@ -159,12 +159,22 @@ void Resources::init(VkDevice device, VkPhysicalDevice physicalDevice, VkInstanc
     m_allocator.createBuffer(m_commonBuffers.frameConstants, sizeof(shaderio::FrameConstants) * 2,
                              VK_BUFFER_USAGE_2_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
 
+
+    NVVK_DBG_NAME(m_commonBuffers.frameConstants.buffer);
+
+
     m_allocator.createBuffer(m_commonBuffers.readBack, sizeof(shaderio::Readback),
                              VK_BUFFER_USAGE_2_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_2_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_2_STORAGE_BUFFER_BIT,
                              VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
+
+    NVVK_DBG_NAME(m_commonBuffers.readBack.buffer);
+
+
     m_allocator.createBuffer(m_commonBuffers.readBackHost, sizeof(shaderio::Readback) * 4,
                              VK_BUFFER_USAGE_2_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_ONLY,
                              VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT);
+
+    NVVK_DBG_NAME(m_commonBuffers.frameConstants.buffer);
   }
 
   {

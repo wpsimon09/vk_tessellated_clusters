@@ -333,7 +333,7 @@ void TessellatedClusters::onAttach(nvapp::Application* app)
     m_sceneFilePath = nvutils::findFile("bunny_v2/bunny.gltf", defaultSearchPaths);
     if(m_tweak.gridCopies == 1)
     {
-      m_tweak.gridCopies = 121;  // 11x11 grid
+      m_tweak.gridCopies = 1;  // 11x11 grid
     }
   }
 
